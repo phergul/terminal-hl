@@ -28,22 +28,22 @@ jobs:
         run: |
           zig build -Doptimize=ReleaseSafe -Dtarget=x86_64-linux
           mkdir -p dist/linux
-          mv zig-out/bin/terminal_hl dist/linux/terminal_hl
-          cd dist/linux && tar -czvf ../../terminal-hl-linux-x86_64.tar.gz terminal_hl
+          mv zig-out/bin/terminal-hl dist/linux/terminal-hl
+          cd dist/linux && tar -czvf ../../terminal-hl-linux-x86_64.tar.gz terminal-hl
 
       - name: Build macOS (arm64)
         run: |
           zig build -Doptimize=ReleaseSafe -Dtarget=aarch64-macos
           mkdir -p dist/macos
-          mv zig-out/bin/terminal_hl dist/macos/terminal_hl
-          cd dist/macos && tar -czvf ../../terminal-hl-macos-aarch64.tar.gz terminal_hl
+          mv zig-out/bin/terminal-hl dist/macos/terminal-hl
+          cd dist/macos && tar -czvf ../../terminal-hl-macos-aarch64.tar.gz terminal-hl
 
       - name: Build macOS (x86_64)
         run: |
           rm -rf zig-out
           zig build -Doptimize=ReleaseSafe -Dtarget=x86_64-macos
-          mv zig-out/bin/terminal_hl terminal_hl
-          tar -czvf terminal-hl-macos-x86_64.tar.gz terminal_hl
+          mv zig-out/bin/terminal-hl terminal-hl
+          tar -czvf terminal-hl-macos-x86_64.tar.gz terminal-hl
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

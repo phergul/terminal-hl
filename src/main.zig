@@ -18,13 +18,16 @@ pub fn main() !void {
     if (run(allocator, args[1])) |ok| {
         _ = ok;
     } else |err| {
-        const stderr = getStderrWriter() catch return;
+        var stderr_buffer: [1024]u8 = undefined;
+        var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+        const stderr = &stderr_writer.interface;
         switch (err) {
             error.ConfigFileNotFound => try stderr.print("Error: Configuration file '{s}' not found.\n", .{args[1]}),
             error.InvalidRegex => try stderr.print("Error: One of your regex patterns is invalid.\n", .{}),
             error.InvalidHexFormat => try stderr.print("Error: One of your colour hex codes is invalid.\n", .{}),
             else => try stderr.print("Error: Unexpected error occurred: {}\n", .{err}),
         }
+        try stderr.flush();
         std.process.exit(1);
     }
 }
@@ -69,13 +72,44 @@ fn run(allocator: std.mem.Allocator, config_path: []const u8) !void {
 }
 
 fn printUsage() !void {
-    const err_writer = getStderrWriter() catch return;
-    try err_writer.writeAll("Usage: terminal_hl <config.json>\n");
-    try err_writer.writeAll("Example: echo 'some text' | terminal_hl rules.json\n");
-}
-
-fn getStderrWriter() !*std.io.Writer {
-    var stderr_buffer: [1024]u8 = undefined;
+    var stderr_buffer: [4096]u8 = undefined;
     var stderr = std.fs.File.stderr().writer(&stderr_buffer);
-    return &stderr.interface;
+    const w = &stderr.interface;
+
+    const usage =
+        \\Usage: terminal-hl <config.json>
+        \\  Highlights text from stdin based on regex patterns in JSON config.
+        \\
+        \\Example:
+        \\  echo 'ERROR: Something failed' | terminal-hl rules.json
+        \\  tail -f app.log | terminal-hl rules.json
+        \\
+        \\JSON Configuration Format:
+        \\  {
+        \\    "highlightRules": [
+        \\      {
+        \\        "pattern": "<regex>",      // Regex pattern to match
+        \\        "colour_raw": "<color>",   // Color name or hex (#RRGGBB)
+        \\        "bold": true|false         // Optional, default false
+        \\      }
+        \\    ]
+        \\  }
+        \\
+        \\Supported color names:
+        \\  black, red, green, yellow, blue, magenta, cyan, white
+        \\
+        \\Example config:
+        \\  {
+        \\    "highlightRules": [
+        \\      {"pattern": "ERROR|FATAL", "colour_raw": "red", "bold": true},
+        \\      {"pattern": "WARNING", "colour_raw": "yellow", "bold": true},
+        \\      {"pattern": "INFO", "colour_raw": "blue", "bold": false},
+        \\      {"pattern": "\\d{4}-\\d{2}-\\d{2}", "colour_raw": "#9370DB"}
+        \\    ]
+        \\  }
+        \\
+    ;
+
+    try w.writeAll(usage);
+    try w.flush();
 }
