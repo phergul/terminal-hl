@@ -1,0 +1,54 @@
+{
+  "highlightRules": [
+    {
+      "pattern": "ERROR|FATAL|CRITICAL",
+      "colour_raw": "red",
+      "bold": true
+    },
+    {
+      "pattern": "WARNING|WARN",
+      "colour_raw": "yellow",
+      "bold": true
+    },
+    {
+      "pattern": "INFO",
+      "colour_raw": "blue",
+      "bold": false
+    },
+    {
+      "pattern": "DEBUG",
+      "colour_raw": "green",
+      "bold": false
+    },
+    {
+      "pattern": "SUCCESS|OK",
+      "colour_raw": "#00ff00",
+      "bold": true
+    },
+    {
+      "pattern": "\\d{4}-\\d{2}-\\d{2}",
+      "colour_raw": "#9370DB",
+      "bold": false
+    },
+    {
+      "pattern": "\\d+\\.\\d+\\.\\d+\\.\\d+",
+      "colour_raw": "#00CED1",
+      "bold": false
+    },
+    {
+      "pattern": "https?://[\\w\\./]+",
+      "colour_raw": "#1E90FF",
+      "bold": false
+    },
+    {
+      "pattern": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
+      "colour_raw": "#FF69B4",
+      "bold": false
+    },
+    {
+      "pattern": "\\d+ms|\\d+s",
+      "colour_raw": "#FFA500",
+      "bold": false
+    }
+  ]
+}
