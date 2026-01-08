@@ -10,17 +10,26 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    if ((args.len < 2) or (args.len > 2)) {
-        var stderr_buffer: [1024]u8 = undefined;
-        var stderr = std.fs.File.stderr().writer(&stderr_buffer);
-        const err_writer = &stderr.interface;
-        try err_writer.writeAll("Usage: terminal_hl <config.json>\n");
-        try err_writer.writeAll("Example: echo 'some text' | terminal_hl rules.json\n");
+    if (args.len != 2) {
+        try printUsage();
         std.process.exit(1);
     }
 
-    const config_path = args[1];
+    if (run(allocator, args[1])) |ok| {
+        _ = ok;
+    } else |err| {
+        const stderr = getStderrWriter() catch return;
+        switch (err) {
+            error.ConfigFileNotFound => try stderr.print("Error: Configuration file '{s}' not found.\n", .{args[1]}),
+            error.InvalidRegex => try stderr.print("Error: One of your regex patterns is invalid.\n", .{}),
+            error.InvalidHexFormat => try stderr.print("Error: One of your colour hex codes is invalid.\n", .{}),
+            else => try stderr.print("Error: Unexpected error occurred: {}\n", .{err}),
+        }
+        std.process.exit(1);
+    }
+}
 
+fn run(allocator: std.mem.Allocator, config_path: []const u8) !void {
     var cfg = try config.loadAndParseConfig(allocator, config_path);
     defer cfg.deinit(allocator);
 
@@ -57,4 +66,16 @@ pub fn main() !void {
     }
 
     try writer.flush();
+}
+
+fn printUsage() !void {
+    const err_writer = getStderrWriter() catch return;
+    try err_writer.writeAll("Usage: terminal_hl <config.json>\n");
+    try err_writer.writeAll("Example: echo 'some text' | terminal_hl rules.json\n");
+}
+
+fn getStderrWriter() !*std.io.Writer {
+    var stderr_buffer: [1024]u8 = undefined;
+    var stderr = std.fs.File.stderr().writer(&stderr_buffer);
+    return &stderr.interface;
 }

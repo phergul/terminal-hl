@@ -43,9 +43,7 @@ pub fn processLine(writer: anytype, line: []const u8, rules: []config.HighlightR
         }
 
         if (best_rule) |match_rule| {
-            if (best_start > pos) {
-                try writer.writeAll(line[pos..best_start]);
-            }
+            if (best_start > pos) try writer.writeAll(line[pos..best_start]);
 
             try applyStyle(writer, match_rule.colour, match_rule.bold);
             try writer.writeAll(line[best_start..best_end]);
@@ -68,8 +66,6 @@ fn applyStyle(writer: anytype, selected_colour: colour.Colour, bold: bool) !void
         .standard => |name| {
             if (ColorMap.get(name)) |ansi_code| {
                 try writer.writeAll(ansi_code);
-            } else {
-                std.debug.print("WARNING: Unknown color name '{s}'\n", .{name});
             }
         },
         .hex => |rgb| {
