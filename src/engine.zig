@@ -15,6 +15,7 @@ const ColorMap = std.StaticStringMap([]const u8).initComptime(.{
 
 pub fn processLine(writer: anytype, line: []const u8, rules: []config.HighlightRule) !void {
     var pos: usize = 0;
+    var match_count: usize = 0;
 
     while (pos < line.len) {
         var best_start: usize = line.len;
@@ -43,6 +44,9 @@ pub fn processLine(writer: anytype, line: []const u8, rules: []config.HighlightR
         }
 
         if (best_rule) |match_rule| {
+            match_count += 1;
+            std.log.debug("match {d}: pattern='{s}' at [{d}..{d}] in line", .{ match_count, match_rule.pattern, best_start, best_end });
+
             if (best_start > pos) try writer.writeAll(line[pos..best_start]);
 
             try applyStyle(writer, match_rule.colour, match_rule.bold);

@@ -39,22 +39,29 @@ pub const Config = struct {
 
 pub fn loadAndParseConfig(allocator: std.mem.Allocator, path: []const u8) !Config {
     const file = std.fs.cwd().openFile(path, .{}) catch |err| {
-        if (err == error.FileNotFound) return error.ConfigFileNotFound;
+        if (err == error.FileNotFound) {
+            std.log.err("config file not found: {s}", .{path});
+            return error.ConfigFileNotFound;
+        }
         return err;
     };
     defer file.close();
 
     const content = try file.readToEndAlloc(allocator, 1024 * 1024);
     errdefer allocator.free(content);
+    std.log.debug("read {d} bytes from config file", .{content.len});
 
     const parsed = try std.json.parseFromSlice(JsonConfig, allocator, content, .{ .ignore_unknown_fields = true });
     errdefer parsed.deinit();
+    std.log.debug("parsed JSON config with {d} rules", .{parsed.value.highlightRules.len});
 
     var rules = try allocator.alloc(HighlightRule, parsed.value.highlightRules.len);
     errdefer allocator.free(rules);
 
     for (parsed.value.highlightRules, 0..) |json_rule, i| {
+        std.log.debug("compiling rule {d}: pattern='{s}', colour='{s}', bold={}", .{ i, json_rule.pattern, json_rule.colour_raw, json_rule.bold });
         const re = Regex.compile(allocator, json_rule.pattern) catch {
+            std.log.err("invalid regex pattern: {s}", .{json_rule.pattern});
             return error.InvalidRegex;
         };
 
