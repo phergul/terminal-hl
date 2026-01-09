@@ -1,5 +1,5 @@
 {
-  "highlightRules": [
+  "highlight_rules": [
     {
       "pattern": "ERROR|FATAL|CRITICAL",
       "colour_raw": "red",

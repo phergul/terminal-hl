@@ -5,6 +5,7 @@ const engine = @import("engine.zig");
 var log_buffer: std.ArrayListUnmanaged(u8) = .{};
 var log_mutex = std.Thread.Mutex{};
 var log_allocator: ?std.mem.Allocator = null;
+var debug_mode: bool = false;
 
 pub const std_options = std.Options{
     .logFn = logFn,
@@ -19,13 +20,17 @@ pub fn logFn(
     const scope_prefix = if (scope == .default) ": " else "(" ++ @tagName(scope) ++ "): ";
     const prefix = "[" ++ @tagName(level) ++ "] " ++ scope_prefix;
 
-    // log to stderr
-    std.debug.lockStdErr();
-    defer std.debug.unlockStdErr();
-    var stderr_buffer: [4096]u8 = undefined;
-    var stderr = std.fs.File.stderr().writer(&stderr_buffer);
-    const w = &stderr.interface;
-    nosuspend w.print(prefix ++ format ++ "\n", args) catch {};
+    // log to stderr only if debug mode is on, or if it's an error/warning
+    const should_log_to_stderr = debug_mode or level == .err or level == .warn;
+    if (should_log_to_stderr) {
+        std.debug.lockStdErr();
+        defer std.debug.unlockStdErr();
+        var stderr_buffer: [4096]u8 = undefined;
+        var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+        const stderr = &stderr_writer.interface;
+        nosuspend stderr.print(prefix ++ format ++ "\n", args) catch {};
+        nosuspend stderr.flush() catch {};
+    }
 
     // log to buffer for dumping on a crash
     if (log_allocator) |alloc| {
@@ -46,13 +51,28 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    if (args.len != 2) {
-        std.log.err("incorrect number of arguments: expected 2, got {d}", .{args.len});
+    if (args.len < 2 or args.len > 3) {
+        std.log.err("missing required argument: config file path", .{});
         try printUsage();
         std.process.exit(1);
     }
 
-    if (run(allocator, args[1])) {
+    var config_path: ?[]const u8 = null;
+    for (args[1..]) |arg| {
+        if (std.mem.eql(u8, arg, "--debug") or std.mem.eql(u8, arg, "-d")) {
+            debug_mode = true;
+        } else if (config_path == null) {
+            config_path = arg;
+        }
+    }
+
+    if (config_path == null) {
+        std.log.err("missing required argument: config file path", .{});
+        try printUsage();
+        std.process.exit(1);
+    }
+
+    if (run(allocator, config_path.?)) {
         std.log.info("terminal-hl completed successfully", .{});
     } else |err| {
         std.log.err("fatal error occurred: {}", .{err});
@@ -62,10 +82,10 @@ pub fn main() !void {
         var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
         const stderr = &stderr_writer.interface;
         switch (err) {
-            error.ConfigFileNotFound => try stderr.print("Error: Configuration file '{s}' not found.\n", .{args[1]}),
-            error.InvalidRegex => try stderr.print("Error: One of your regex patterns is invalid.\n", .{}),
-            error.InvalidHexFormat => try stderr.print("Error: One of your colour hex codes is invalid.\n", .{}),
-            else => try stderr.print("Error: Unexpected error occurred: {}\n", .{err}),
+            error.ConfigFileNotFound => std.log.err("Error: Configuration file '{s}' not found.\n", .{config_path.?}),
+            error.InvalidRegex => std.log.err("Error: One of your regex patterns is invalid.\n", .{}),
+            error.InvalidHexFormat => std.log.err("Error: One of your colour hex codes is invalid.\n", .{}),
+            else => std.log.err("Error: Unexpected error occurred: {}\n", .{err}),
         }
 
         try stderr.print("A log file has been created at: {s}\n", .{log_path});
@@ -106,6 +126,7 @@ fn run(allocator: std.mem.Allocator, config_path: []const u8) !void {
 
         try engine.processLine(writer, line.written(), cfg.highlightRules);
         try writer.writeByte('\n');
+        try writer.flush();
 
         reader.toss(1);
         line.clearRetainingCapacity();
@@ -115,23 +136,25 @@ fn run(allocator: std.mem.Allocator, config_path: []const u8) !void {
         std.log.debug("processing final line without newline", .{});
         try engine.processLine(writer, line.written(), cfg.highlightRules);
         try writer.writeByte('\n');
+        try writer.flush();
     }
-
-    try writer.flush();
 }
 
 fn printUsage() !void {
     var stderr_buffer: [4096]u8 = undefined;
-    var stderr = std.fs.File.stderr().writer(&stderr_buffer);
-    const w = &stderr.interface;
+    var stderr_writer = std.fs.File.stderr().writer(&stderr_buffer);
+    const w = &stderr_writer.interface;
 
     const usage =
-        \\Usage: terminal-hl <config.json>
+        \\Usage: terminal-hl [--debug|-d] <config.json>
         \\  Highlights text from stdin based on regex patterns in JSON config.
+        \\
+        \\Options:
+        \\  --debug, -d    Enable debug logging to stderr
         \\
         \\Example:
         \\  echo 'ERROR: Something failed' | terminal-hl rules.json
-        \\  tail -f app.log | terminal-hl rules.json
+        \\  tail -f app.log | terminal-hl --debug rules.json
         \\
         \\JSON Configuration Format:
         \\  {

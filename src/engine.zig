@@ -23,21 +23,15 @@ pub fn processLine(writer: anytype, line: []const u8, rules: []config.HighlightR
         var best_rule: ?*config.HighlightRule = null;
 
         for (rules) |*rule| {
-            if (rule.re) |*re| {
-                if (re.captures(line[pos..]) catch null) |caps| {
-                    var c = caps;
-                    defer c.deinit();
+            if (rule.re) |re| {
+                if (re.match(line[pos..])) |m| {
+                    const match_abs_start = pos + m.start;
+                    const match_abs_end = pos + m.end;
 
-                    if (c.boundsAt(0)) |bounds| {
-                        const len = bounds.upper - bounds.lower;
-                        const match_abs_start = pos + bounds.lower;
-                        const match_abs_end = pos + bounds.upper;
-
-                        if (len > 0 and match_abs_start < best_start) {
-                            best_start = match_abs_start;
-                            best_end = match_abs_end;
-                            best_rule = rule;
-                        }
+                    if (match_abs_end > match_abs_start and match_abs_start < best_start) {
+                        best_start = match_abs_start;
+                        best_end = match_abs_end;
+                        best_rule = rule;
                     }
                 }
             }

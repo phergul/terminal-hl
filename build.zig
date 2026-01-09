@@ -21,7 +21,7 @@ pub fn build(b: *std.Build) void {
     // target and optimize options) will be listed when running `zig build --help`
     // in this directory.
 
-    const regex_dep = b.dependency("regex", .{
+    const regex_dep = b.dependency("mvzr", .{
         .target = target,
         .optimize = optimize,
     });
@@ -58,7 +58,7 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    exe.root_module.addImport("regex", regex_dep.module("regex"));
+    exe.root_module.addImport("mvzr", regex_dep.module("mvzr"));
 
     // This declares intent for the executable to be installed into the
     // install prefix when running `zig build` (i.e. when executing the default
