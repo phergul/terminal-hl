@@ -158,10 +158,10 @@ fn printUsage() !void {
         \\
         \\JSON Configuration Format:
         \\  {
-        \\    "highlightRules": [
+        \\    "highlight_rules": [
         \\      {
         \\        "pattern": "<regex>",      // Regex pattern to match
-        \\        "colour_raw": "<color>",   // Color name or hex (#RRGGBB)
+        \\        "colour": "<color>",   // Color name or hex (#RRGGBB)
         \\        "bold": true|false         // Optional, default false
         \\      }
         \\    ]
@@ -172,11 +172,11 @@ fn printUsage() !void {
         \\
         \\Example config:
         \\  {
-        \\    "highlightRules": [
-        \\      {"pattern": "ERROR|FATAL", "colour_raw": "red", "bold": true},
-        \\      {"pattern": "WARNING", "colour_raw": "yellow", "bold": true},
-        \\      {"pattern": "INFO", "colour_raw": "blue", "bold": false},
-        \\      {"pattern": "\\d{4}-\\d{2}-\\d{2}", "colour_raw": "#9370DB"}
+        \\    "highlight_rules": [
+        \\      {"pattern": "ERROR|FATAL", "colour": "red", "bold": true},
+        \\      {"pattern": "WARNING", "colour": "yellow", "bold": true},
+        \\      {"pattern": "INFO", "colour": "blue", "bold": false},
+        \\      {"pattern": "\\d{4}-\\d{2}-\\d{2}", "colour": "#9370DB"}
         \\    ]
         \\  }
         \\
