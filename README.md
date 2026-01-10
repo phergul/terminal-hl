@@ -26,3 +26,10 @@ tar -xzf terminal-hl-macos-x86_64.tar.gz
 sudo mv terminal-hl /usr/local/bin/
 rm terminal-hl-macos-x86_64.tar.gz
 ```
+
+---
+
+Alternatively use [gah](https://github.com/get-gah/gah)
+```bash
+gah install phergul/terminal-hl
+```
