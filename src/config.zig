@@ -2,9 +2,11 @@ const std = @import("std");
 const colour = @import("colour.zig");
 const mvzr = @import("mvzr");
 
+const CustomRegex = mvzr.SizedRegex(256, 16);
+
 pub const HighlightRule = struct {
     pattern: []const u8,
-    re: ?mvzr.Regex = null,
+    re: ?CustomRegex = null,
     colour: colour.Colour,
     bold: bool,
 };
@@ -55,7 +57,7 @@ pub fn loadAndParseConfig(allocator: std.mem.Allocator, path: []const u8) !Confi
 
     for (parsed.value.highlight_rules, 0..) |json_rule, i| {
         std.log.debug("compiling rule {d}: pattern='{s}', colour='{s}', bold={}", .{ i, json_rule.pattern, json_rule.colour, json_rule.bold });
-        const re = mvzr.Regex.compile(json_rule.pattern) orelse {
+        const re = CustomRegex.compile(json_rule.pattern) orelse {
             std.log.err("invalid regex pattern: {s}", .{json_rule.pattern});
             return error.InvalidRegex;
         };

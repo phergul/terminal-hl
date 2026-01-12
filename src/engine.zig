@@ -28,10 +28,12 @@ pub fn processLine(writer: anytype, line: []const u8, rules: []config.HighlightR
                     const match_abs_start = pos + m.start;
                     const match_abs_end = pos + m.end;
 
-                    if (match_abs_end > match_abs_start and match_abs_start < best_start) {
-                        best_start = match_abs_start;
-                        best_end = match_abs_end;
-                        best_rule = rule;
+                    if (match_abs_end > match_abs_start) {
+                        if (match_abs_start < best_start or (match_abs_start == best_start and match_abs_end > best_end)) {
+                            best_start = match_abs_start;
+                            best_end = match_abs_end;
+                            best_rule = rule;
+                        }
                     }
                 }
             }
