@@ -112,30 +112,28 @@ fn run(allocator: std.mem.Allocator, config_path: []const u8) !void {
     const reader = &stdin_reader.interface;
     const writer = &stdout_writer.interface;
 
-    var line = std.Io.Writer.Allocating.init(allocator);
-    defer line.deinit();
+    var logical_line = try std.ArrayList(u8).initCapacity(allocator, 4096);
+    defer logical_line.deinit(allocator);
 
     std.log.debug("starting line processing loop", .{});
     while (true) {
-        _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
-            if (err == error.EndOfStream) {
-                std.log.debug("reached end of stream", .{});
-                break;
-            } else return err;
-        };
+        const b = try reader.take(1);
+        if (b.len == 0) break;
 
-        try engine.processLine(writer, line.written(), cfg.highlightRules);
-        try writer.writeByte('\n');
-        try writer.flush();
-
-        reader.toss(1);
-        line.clearRetainingCapacity();
+        if (b[0] == '\n' or b[0] == '\r') {
+            std.log.debug("processing logical line of length {d}", .{logical_line.items.len});
+            try engine.processLine(writer, logical_line.items, cfg.highlightRules);
+            try writer.writeByte(b[0]);
+            try writer.flush();
+            logical_line.clearRetainingCapacity();
+        } else {
+            try logical_line.append(allocator, b[0]);
+        }
     }
 
-    if (line.written().len > 0) {
+    if (logical_line.items.len > 0) {
         std.log.debug("processing final line without newline", .{});
-        try engine.processLine(writer, line.written(), cfg.highlightRules);
-        try writer.writeByte('\n');
+        try engine.processLine(writer, logical_line.items, cfg.highlightRules);
         try writer.flush();
     }
 }
