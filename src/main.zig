@@ -117,7 +117,10 @@ fn run(allocator: std.mem.Allocator, config_path: []const u8) !void {
 
     std.log.debug("starting line processing loop", .{});
     while (true) {
-        const b = try reader.take(1);
+        const b = reader.take(1) catch |err| switch (err) {
+            error.EndOfStream => break,
+            else => return err,
+        };
         if (b.len == 0) break;
 
         if (b[0] == '\n' or b[0] == '\r') {
